@@ -26,7 +26,7 @@ export default function Nav() {
           <ul className="navbar-nav ms-auto mb-2 mb-lg-0">
             {isAuthenticated() && (
               <>
-                <li className="nav-item"><NavLink className="nav-link text-white" to="/communities">Communities</NavLink></li>
+                {/*<li className="nav-item"><NavLink className="nav-link text-white" to="/communities">Communities</NavLink></li>*/}
                 <li className="nav-item"><NavLink className="nav-link text-white" to="/apartments">Apartments</NavLink></li>
                 <li className="nav-item"><NavLink className="nav-link text-white" to="/users">Users</NavLink></li>
                 <li className="nav-item d-flex align-items-center ms-3">
