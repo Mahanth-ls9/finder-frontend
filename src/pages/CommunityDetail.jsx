@@ -1,7 +1,9 @@
+// src/pages/CommunityDetail.jsx
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { CommunitiesAPI, ApartmentsAPI } from '../api';
 import Alert from '../components/Alert';
+import { isAdmin } from '../api/auth';
 
 export default function CommunityDetail() {
   const { id } = useParams();
@@ -12,6 +14,8 @@ export default function CommunityDetail() {
   const [form, setForm] = useState({ name: '', description: '' });
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
+
+  const admin = isAdmin();
 
   useEffect(() => { load(); }, [id]);
 
@@ -32,6 +36,7 @@ export default function CommunityDetail() {
   }
 
   async function save() {
+    if (!admin) return setError('You do not have permission to save changes');
     setError(null);
     try {
       const updated = await CommunitiesAPI.update(id, form);
@@ -45,6 +50,7 @@ export default function CommunityDetail() {
   }
 
   async function remove() {
+    if (!admin) return setError('You do not have permission to delete');
     if (!confirm('Delete community?')) return;
     try {
       await CommunitiesAPI.remove(id);
@@ -69,13 +75,19 @@ export default function CommunityDetail() {
             <div className="text-muted small mt-2">ID: {community.id}</div>
           </div>
           <div>
-            <button className="btn btn-outline-secondary me-2" onClick={() => setEditing(s => !s)}>{editing ? 'Cancel' : 'Edit'}</button>
-            <button className="btn btn-danger" onClick={remove}>Delete</button>
+            {admin ? (
+              <>
+                <button className="btn btn-outline-secondary me-2" onClick={() => setEditing(s => !s)}>{editing ? 'Cancel' : 'Edit'}</button>
+                <button className="btn btn-danger" onClick={remove}>Delete</button>
+              </>
+            ) : (
+              <div className="text-muted small">Read-only</div>
+            )}
           </div>
         </div>
       </div>
 
-      {editing && (
+      {editing && admin && (
         <div className="card mb-3">
           <div className="card-body">
             <div className="mb-2">

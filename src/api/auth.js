@@ -39,11 +39,17 @@ export function logout() {
   clearToken();
 }
 
-// helpers (unchanged)
+// helpers
 export function parseJwt(token) {
   try {
     const payload = token.split('.')[1];
-    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    // atob can throw on padded / URL-safe base64; replace URL-safe chars first
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    // pad base64 string if necessary
+    const pad = base64.length % 4;
+    const padded = pad ? base64 + '='.repeat(4 - pad) : base64;
+    const decoded = atob(padded);
+    // decode URI component safely
     return JSON.parse(decodeURIComponent(escape(decoded)));
   } catch (e) {
     return null;
@@ -72,4 +78,18 @@ export function isAuthenticated() {
     return false;
   }
   return true;
+}
+
+// New helper: returns true if the token includes ADMIN role
+export function isAdmin() {
+  const t = getToken();
+  if (!t) return false;
+  const p = parseJwt(t);
+  if (!p) return false;
+  const roles = p.roles || [];
+  // roles may be ["USER"] or ["ROLE_ADMIN"] etc.
+  return roles.some(r => {
+    const rr = String(r).toUpperCase();
+    return rr === 'ADMIN' || rr === 'ROLE_ADMIN' || rr.includes('ADMIN');
+  });
 }

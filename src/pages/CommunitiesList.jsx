@@ -1,7 +1,9 @@
+// src/pages/CommunitiesList.jsx
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CommunitiesAPI } from '../api';
 import Alert from '../components/Alert';
+import { isAdmin } from '../api/auth';
 
 export default function CommunitiesList() {
   const [items, setItems] = useState([]);
@@ -9,6 +11,8 @@ export default function CommunitiesList() {
   const [form, setForm] = useState({ name: '', description: '' });
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
+
+  const admin = isAdmin();
 
   useEffect(() => { load(); }, []);
 
@@ -26,6 +30,7 @@ export default function CommunitiesList() {
 
   async function create(e) {
     e.preventDefault();
+    if (!admin) return setError('You do not have permission to create communities');
     setError(null);
     try {
       const created = await CommunitiesAPI.create(form);
@@ -48,21 +53,23 @@ export default function CommunitiesList() {
       {message && <Alert type="success">{message}</Alert>}
       {error && <Alert type="danger" onClose={() => setError(null)}>{error}</Alert>}
 
-      <div className="card mb-4">
-        <div className="card-body">
-          <form onSubmit={create} className="row g-2">
-            <div className="col-md-4">
-              <input className="form-control" placeholder="Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
-            </div>
-            <div className="col-md-6">
-              <input className="form-control" placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-            </div>
-            <div className="col-md-2 d-grid">
-              <button className="btn btn-primary" type="submit">Create</button>
-            </div>
-          </form>
+      {admin && (
+        <div className="card mb-4">
+          <div className="card-body">
+            <form onSubmit={create} className="row g-2">
+              <div className="col-md-4">
+                <input className="form-control" placeholder="Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+              </div>
+              <div className="col-md-6">
+                <input className="form-control" placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+              </div>
+              <div className="col-md-2 d-grid">
+                <button className="btn btn-primary" type="submit">Create</button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
 
       {loading ? <div>Loading...</div> : (
         <div className="row g-3">

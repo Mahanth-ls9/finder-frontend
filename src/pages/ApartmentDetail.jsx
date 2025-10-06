@@ -1,7 +1,9 @@
+// src/pages/ApartmentDetail.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ApartmentsAPI } from '../api';
 import Alert from '../components/Alert';
+import { isAdmin } from '../api/auth';
 
 export default function ApartmentDetail() {
   const { id } = useParams();
@@ -12,6 +14,8 @@ export default function ApartmentDetail() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
+
+  const admin = isAdmin();
 
   // guard to avoid double-fetch in React StrictMode (dev)
   const didFetch = useRef(false);
@@ -53,6 +57,7 @@ export default function ApartmentDetail() {
   }
 
   async function save() {
+    if (!admin) return setError('You do not have permission to save changes');
     setLoading(true);
     setError(null);
     try {
@@ -101,6 +106,7 @@ export default function ApartmentDetail() {
   }
 
   async function remove() {
+    if (!admin) return setError('You do not have permission to delete');
     if (!confirm('Delete this apartment?')) return;
     setLoading(true);
     setError(null);
@@ -140,14 +146,20 @@ export default function ApartmentDetail() {
           </div>
 
           <div className="d-flex flex-column gap-2">
-            <button className="btn btn-outline-secondary" onClick={() => setEditing(s => !s)}>{editing ? 'Cancel' : 'Edit'}</button>
-            <button className="btn btn-danger" onClick={remove}>Delete</button>
+            {admin ? (
+              <>
+                <button className="btn btn-outline-secondary" onClick={() => setEditing(s => !s)}>{editing ? 'Cancel' : 'Edit'}</button>
+                <button className="btn btn-danger" onClick={remove}>Delete</button>
+              </>
+            ) : (
+              <div className="text-muted small">Read-only</div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Edit form */}
-      {editing && (
+      {editing && admin && (
         <div className="card mb-4">
           <div className="card-body">
             <h5 className="mb-3">Edit apartment</h5>

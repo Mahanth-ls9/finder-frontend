@@ -1,13 +1,16 @@
+// src/components/Nav.jsx
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { isAuthenticated, logout, currentUser } from '../api/auth';
+import { isAuthenticated, logout, currentUser, isAdmin } from '../api/auth';
 
 export default function Nav() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [admin, setAdmin] = useState(false);
 
   useEffect(() => {
     setUser(currentUser());
+    setAdmin(isAdmin());
   }, []);
 
   function handleLogout() {
@@ -26,9 +29,9 @@ export default function Nav() {
           <ul className="navbar-nav ms-auto mb-2 mb-lg-0">
             {isAuthenticated() && (
               <>
-                {/*<li className="nav-item"><NavLink className="nav-link text-white" to="/communities">Communities</NavLink></li>*/}
                 <li className="nav-item"><NavLink className="nav-link text-white" to="/apartments">Apartments</NavLink></li>
-                <li className="nav-item"><NavLink className="nav-link text-white" to="/users">Users</NavLink></li>
+                <li className="nav-item"><NavLink className="nav-link text-white" to="/communities">Communities</NavLink></li>
+                {admin && <li className="nav-item"><NavLink className="nav-link text-white" to="/users">Users</NavLink></li>}
                 <li className="nav-item d-flex align-items-center ms-3">
                   <span className="text-white me-2 small">{user?.username}</span>
                   <button className="btn btn-sm btn-outline-light" onClick={handleLogout}>Logout</button>

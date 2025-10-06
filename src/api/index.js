@@ -22,7 +22,7 @@ api.interceptors.request.use(config => {
   return config;
 }, error => Promise.reject(error));
 
-// error wrapper unchanged...
+// Simple wrapper for error -> message
 function handleError(err) {
   if (err.response) {
     const msg = err.response.data?.message || err.response.statusText || 'API error';
@@ -31,7 +31,6 @@ function handleError(err) {
   return { error: true, message: err.message || 'Network error' };
 }
 
-// ...export your APIs exactly as before but using this `api` instance.
 export const CommunitiesAPI = {
   list: async () => {
     try { const r = await api.get('/communities'); return r.data; }
@@ -69,7 +68,7 @@ export const ApartmentsAPI = {
     catch (e) { throw handleError(e); }
   },
   update: async (id, payload) => {
-    try { const r = await api.put(`/apartment/${id}`, payload); return r.data; }
+    try { const r = await api.put(`/apartments/${id}`, payload); return r.data; } // <- fixed path
     catch (e) { throw handleError(e); }
   },
   remove: async (id) => {

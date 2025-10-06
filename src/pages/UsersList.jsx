@@ -1,8 +1,12 @@
+// src/pages/UsersList.jsx
 import React, { useEffect, useState } from 'react';
 import { UsersAPI } from '../api';
+import { isAdmin } from '../api/auth';
+import { Navigate } from 'react-router-dom';
 
 export default function UsersList() {
   const [users, setUsers] = useState([]);
+  const admin = isAdmin();
 
   useEffect(() => { load(); }, []);
 
@@ -14,6 +18,11 @@ export default function UsersList() {
       console.error(e);
       alert(e.message || 'Failed to load users');
     }
+  }
+
+  // Redirect non-admins away from this page
+  if (!admin) {
+    return <Navigate to="/" replace />;
   }
 
   return (

@@ -1,8 +1,10 @@
+// src/pages/ApartmentsList.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ApartmentsAPI } from '../api';
 import Alert from '../components/Alert';
 import ApartmentModal from '../components/ApartmentModel';
+import { isAdmin } from '../api/auth';
 
 export default function ApartmentsList() {
   const [items, setItems] = useState([]);
@@ -12,6 +14,7 @@ export default function ApartmentsList() {
   const [error, setError] = useState(null);
 
   const modalRef = useRef();
+  const admin = isAdmin();
 
   useEffect(() => { load(); }, []);
 
@@ -29,6 +32,7 @@ export default function ApartmentsList() {
 
   async function create(e) {
     e.preventDefault();
+    if (!admin) return setError('You do not have permission to create apartments');
     setError(null);
     try {
       const created = await ApartmentsAPI.create(form);
@@ -66,24 +70,26 @@ export default function ApartmentsList() {
       {message && <Alert type="success">{message}</Alert>}
       {error && <Alert type="danger" onClose={() => setError(null)}>{error}</Alert>}
 
-      <div className="card mb-4">
-        <div className="card-body">
-          <form onSubmit={create} className="row g-2">
-            <div className="col-md-4">
-              <input className="form-control" placeholder="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
-            </div>
-            <div className="col-md-3">
-              <input className="form-control" placeholder="Number" value={form.apartmentNumber} onChange={e => setForm({ ...form, apartmentNumber: e.target.value })} />
-            </div>
-            <div className="col-md-3">
-              <input className="form-control" placeholder="Community ID" value={form.communityId} onChange={e => setForm({ ...form, communityId: e.target.value })} />
-            </div>
-            <div className="col-md-2 d-grid">
-              <button className="btn btn-primary" type="submit">Create</button>
-            </div>
-          </form>
+      {admin && (
+        <div className="card mb-4">
+          <div className="card-body">
+            <form onSubmit={create} className="row g-2">
+              <div className="col-md-4">
+                <input className="form-control" placeholder="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
+              </div>
+              <div className="col-md-3">
+                <input className="form-control" placeholder="Number" value={form.apartmentNumber} onChange={e => setForm({ ...form, apartmentNumber: e.target.value })} />
+              </div>
+              <div className="col-md-3">
+                <input className="form-control" placeholder="Community ID" value={form.communityId} onChange={e => setForm({ ...form, communityId: e.target.value })} />
+              </div>
+              <div className="col-md-2 d-grid">
+                <button className="btn btn-primary" type="submit">Create</button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="card shadow-sm">
         <div className="table-responsive">
@@ -108,7 +114,10 @@ export default function ApartmentsList() {
                   <td className="text-end">
                     <button className="btn btn-sm btn-outline-primary me-2" onClick={() => openModalFor(a.id)}>View</button>
                     <Link to={`/apartments/${a.id}`} className="btn btn-sm btn-outline-secondary me-2">Open Page</Link>
-                    <span className="text-muted small">ID: {a.id}</span>
+                    {admin && (
+                      <span className="text-muted small">ID: {a.id}</span>
+                    )}
+                    {!admin && <span className="text-muted small">ID: {a.id}</span>}
                   </td>
                 </tr>
               ))}

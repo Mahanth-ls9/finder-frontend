@@ -1,7 +1,9 @@
+// src/components/ApartmentModel.jsx
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Modal } from 'bootstrap';
 import { ApartmentsAPI } from '../api';
 import Alert from './Alert';
+import { isAdmin } from '../api/auth';
 
 /*
 Usage: parent keeps a ref to this component and calls modalRef.current.open(apartmentId)
@@ -16,6 +18,8 @@ const ApartmentModel = forwardRef(function ApartmentModel(props, ref) {
   const [form, setForm] = useState({});
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
+
+  const admin = isAdmin();
 
   useImperativeHandle(ref, () => ({
     open: (id) => showForId(id),
@@ -68,6 +72,7 @@ const ApartmentModel = forwardRef(function ApartmentModel(props, ref) {
   }
 
   async function save() {
+    if (!admin) return setError('You do not have permission to edit this apartment');
     setError(null);
     setLoading(true);
     try {
@@ -100,6 +105,7 @@ const ApartmentModel = forwardRef(function ApartmentModel(props, ref) {
   }
 
   async function del() {
+    if (!admin) return setError('You do not have permission to delete this apartment');
     if (!confirm('Delete apartment?')) return;
     try {
       await ApartmentsAPI.remove(apartment.id);
@@ -126,6 +132,8 @@ const ApartmentModel = forwardRef(function ApartmentModel(props, ref) {
     );
   }
 
+  const inputDisabled = !admin;
+
   return (
     <div className="modal fade" tabIndex="-1" ref={modalRef}>
       <div className="modal-dialog modal-lg modal-dialog-scrollable">
@@ -141,34 +149,34 @@ const ApartmentModel = forwardRef(function ApartmentModel(props, ref) {
 
             <div className="mb-3">
               <label className="form-label">Title</label>
-              <input className="form-control" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+              <input className="form-control" disabled={inputDisabled} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
             </div>
 
             <div className="mb-3">
               <label className="form-label">Description</label>
-              <textarea className="form-control" rows="3" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}></textarea>
+              <textarea className="form-control" disabled={inputDisabled} rows="3" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}></textarea>
             </div>
 
             <div className="row g-2 mb-3">
               <div className="col-md-3">
                 <label className="form-label">Price</label>
-                <input type="number" className="form-control" value={form.price ?? ''} onChange={e => setForm({ ...form, price: e.target.value })} />
+                <input type="number" className="form-control" disabled={inputDisabled} value={form.price ?? ''} onChange={e => setForm({ ...form, price: e.target.value })} />
               </div>
               <div className="col-md-2">
                 <label className="form-label">Bedrooms</label>
-                <input type="number" className="form-control" value={form.bedrooms} onChange={e => setForm({ ...form, bedrooms: e.target.value })} />
+                <input type="number" className="form-control" disabled={inputDisabled} value={form.bedrooms} onChange={e => setForm({ ...form, bedrooms: e.target.value })} />
               </div>
               <div className="col-md-2">
                 <label className="form-label">Bathrooms</label>
-                <input type="number" className="form-control" value={form.bathrooms} onChange={e => setForm({ ...form, bathrooms: e.target.value })} />
+                <input type="number" className="form-control" disabled={inputDisabled} value={form.bathrooms} onChange={e => setForm({ ...form, bathrooms: e.target.value })} />
               </div>
               <div className="col-md-2">
                 <label className="form-label">Sqft</label>
-                <input type="number" className="form-control" value={form.sqft} onChange={e => setForm({ ...form, sqft: e.target.value })} />
+                <input type="number" className="form-control" disabled={inputDisabled} value={form.sqft} onChange={e => setForm({ ...form, sqft: e.target.value })} />
               </div>
               <div className="col-md-3">
                 <label className="form-label">Available</label>
-                <select className="form-select" value={form.available ? 'true' : 'false'} onChange={e => setForm({ ...form, available: e.target.value === 'true' })}>
+                <select className="form-select" disabled={inputDisabled} value={form.available ? 'true' : 'false'} onChange={e => setForm({ ...form, available: e.target.value === 'true' })}>
                   <option value="true">Yes</option>
                   <option value="false">No</option>
                 </select>
@@ -178,22 +186,22 @@ const ApartmentModel = forwardRef(function ApartmentModel(props, ref) {
             <div className="row g-2 mb-3">
               <div className="col-md-6">
                 <label className="form-label">Address</label>
-                <input className="form-control" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
+                <input className="form-control" disabled={inputDisabled} value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
               </div>
               <div className="col-md-3">
                 <label className="form-label">Latitude</label>
-                <input className="form-control" value={form.latitude ?? ''} onChange={e => setForm({ ...form, latitude: e.target.value })} />
+                <input className="form-control" disabled={inputDisabled} value={form.latitude ?? ''} onChange={e => setForm({ ...form, latitude: e.target.value })} />
               </div>
               <div className="col-md-3">
                 <label className="form-label">Longitude</label>
-                <input className="form-control" value={form.longitude ?? ''} onChange={e => setForm({ ...form, longitude: e.target.value })} />
+                <input className="form-control" disabled={inputDisabled} value={form.longitude ?? ''} onChange={e => setForm({ ...form, longitude: e.target.value })} />
               </div>
             </div>
 
             <div className="row g-2">
               <div className="col-md-6">
                 <label className="form-label">Community</label>
-                <input className="form-control" value={form.communityId} onChange={e => setForm({ ...form, communityId: e.target.value })} />
+                <input className="form-control" disabled={inputDisabled} value={form.communityId} onChange={e => setForm({ ...form, communityId: e.target.value })} />
               </div>
               <div className="col-md-6">
                 <label className="form-label">Community Name</label>
@@ -207,9 +215,18 @@ const ApartmentModel = forwardRef(function ApartmentModel(props, ref) {
           </div>
 
           <div className="modal-footer">
-            <button className="btn btn-danger me-auto" onClick={del}>Delete</button>
-            <button className="btn btn-secondary" onClick={hide}>Close</button>
-            <button className="btn btn-primary" onClick={save} disabled={loading}>{loading ? 'Saving...' : 'Save changes'}</button>
+            {admin ? (
+              <>
+                <button className="btn btn-danger me-auto" onClick={del}>Delete</button>
+                <button className="btn btn-secondary" onClick={hide}>Close</button>
+                <button className="btn btn-primary" onClick={save} disabled={loading}>{loading ? 'Saving...' : 'Save changes'}</button>
+              </>
+            ) : (
+              <>
+                <div className="me-auto text-muted small">Read-only</div>
+                <button className="btn btn-secondary" onClick={hide}>Close</button>
+              </>
+            )}
           </div>
         </div>
       </div>
