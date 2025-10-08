@@ -10,6 +10,10 @@ import UsersList from './pages/UsersList';
 import Login from './pages/Login';
 import PrivateRoute from './components/PrivateRoute';
 import Register from './pages/Register';  // ✅ new
+import AdminDashboard from './pages/AdminDashboard';
+
+
+
 
 export default function App() {
   return (
@@ -49,6 +53,14 @@ export default function App() {
             element={
               <PrivateRoute>
                 <ApartmentsList />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <PrivateRoute>
+                <AdminDashboard />
               </PrivateRoute>
             }
           />

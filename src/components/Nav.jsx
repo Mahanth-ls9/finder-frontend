@@ -32,6 +32,7 @@ export default function Nav() {
                 <li className="nav-item"><NavLink className="nav-link text-white" to="/apartments">Apartments</NavLink></li>
                 <li className="nav-item"><NavLink className="nav-link text-white" to="/communities">Communities</NavLink></li>
                 {admin && <li className="nav-item"><NavLink className="nav-link text-white" to="/users">Users</NavLink></li>}
+                {admin && <li className="nav-item"><NavLink className="nav-link text-white" to="/admin">Administration</NavLink></li>}
                 <li className="nav-item d-flex align-items-center ms-3">
                   <span className="text-white me-2 small">{user?.username}</span>
                   <button className="btn btn-sm btn-outline-light" onClick={handleLogout}>Logout</button>

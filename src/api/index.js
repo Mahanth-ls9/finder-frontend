@@ -105,5 +105,9 @@ export const UsersAPI = {
   adminRegister: async (payload) => {
     try { const r = await api.post('/users/adminregistration', payload); return r.data; }
     catch (e) { throw handleError(e); }
+  },
+    resetPassword: async (userId, payload) => {
+    try { const r = await api.post(`/users/${userId}/reset-password`, payload); return r.data; }
+    catch (e) { throw handleError(e); }
   }
 };
