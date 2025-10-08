@@ -1,66 +1,48 @@
-// src/pages/UsersList.jsx
-import React, { useEffect, useState } from 'react';
-import { UsersAPI } from '../api';
-import { isAdmin } from '../api/auth';
-import { Navigate } from 'react-router-dom';
-import useRevealOnScroll from '../hooks/useRevealOnScroll';
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { fadeUp, container } from "../motionvariants";
+import blogBlob from "../assets/blog.svg";
+import { UsersAPI } from "../api";
+import { isAdmin } from "../api/auth";
 
 export default function UsersList() {
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const admin = isAdmin();
 
-  // enable reveal behavior
-  useRevealOnScroll();
-
   useEffect(() => {
-    loadUsers();
+    (async () => {
+      try {
+        const data = await UsersAPI.list();
+        setUsers(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
   }, []);
 
-  async function loadUsers() {
-    try {
-      const data = await UsersAPI.list();
-      setUsers(Array.isArray(data) ? data : []);
-    } catch (e) {
-      console.error(e);
-      alert(e.message || 'Failed to load users');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (!admin) {
-    return <Navigate to="/" replace />;
-  }
-
   return (
-    <div>
-      <h2 className="reveal">All Users</h2>
+    <main className="hero">
+      <div className="hero-blobs">
+        <img src={blogBlob} alt="" className="blob-left floaty" />
+        <img src={blogBlob} alt="" className="blob-right floaty" />
+      </div>
 
-      {loading ? (
-        <div className="text-muted mt-3">Loading users...</div>
-      ) : users.length === 0 ? (
-        <div className="text-muted mt-3">No users found.</div>
-      ) : (
-        <div className="row mt-3 g-3">
+      <motion.div className="container" variants={container} initial="hidden" animate="visible">
+        <motion.h1 variants={fadeUp}>Users</motion.h1>
+        <motion.p variants={fadeUp} className="text-muted">
+          {admin ? "Admin view — manage users and roles." : "User directory."}
+        </motion.p>
+
+        <motion.div variants={fadeUp} className="cards-grid">
           {users.map((u) => (
-            <div key={u.id} className="col-sm-6 col-md-4 col-lg-3 reveal">
-              <div className="card user-card h-100 shadow-sm">
-                <div className="card-body">
-                  <h6 className="fw-bold mb-1">{u.username || 'Unnamed User'}</h6>
-                  <div className="text-muted small mb-2">{u.email || 'No email'}</div>
-
-                  <div className="badge bg-primary-subtle text-primary border border-primary-subtle mb-2">
-                    {Array.isArray(u.roles) ? u.roles.join(', ') : u.roles || 'USER'}
-                  </div>
-
-                  <div className="text-muted small">ID: {u.id}</div>
-                </div>
-              </div>
-            </div>
+            <motion.div key={u.id} className="card user-card" variants={fadeUp} whileHover={{ scale: 1.03 }}>
+              <h3>{u.username || "Unnamed User"}</h3>
+              <p className="text-muted">{u.email}</p>
+              <span className="role-badge">{(u.roles && [...u.roles].join(", ")) || "USER"}</span>
+            </motion.div>
           ))}
-        </div>
-      )}
-    </div>
+        </motion.div>
+      </motion.div>
+    </main>
   );
 }

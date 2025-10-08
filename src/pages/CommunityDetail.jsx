@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { CommunitiesAPI, ApartmentsAPI } from '../api';
 import Alert from '../components/Alert';
 import { isAdmin } from '../api/auth';
+import { motion } from 'framer-motion';
 
 export default function CommunityDetail() {
   const { id } = useParams();
@@ -14,7 +15,6 @@ export default function CommunityDetail() {
   const [form, setForm] = useState({ name: '', description: '' });
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
-
   const admin = isAdmin();
 
   useEffect(() => { load(); }, [id]);
@@ -67,7 +67,7 @@ export default function CommunityDetail() {
       {message && <Alert type="success">{message}</Alert>}
       {error && <Alert type="danger" onClose={() => setError(null)}>{error}</Alert>}
 
-      <div className="card mb-3 shadow-sm">
+      <motion.div className="card mb-3 shadow-sm" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <div className="card-body d-flex justify-content-between align-items-start">
           <div>
             <h3 className="card-title">{community.name}</h3>
@@ -85,23 +85,16 @@ export default function CommunityDetail() {
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {editing && admin && (
-        <div className="card mb-3">
+        <motion.div className="card mb-3" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <div className="card-body">
-            <div className="mb-2">
-              <input className="form-control" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="mb-2">
-              <input className="form-control" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-            </div>
-            <div>
-              <button className="btn btn-success me-2" onClick={save}>Save</button>
-              <button className="btn btn-secondary" onClick={() => setEditing(false)}>Cancel</button>
-            </div>
+            <div className="mb-2"><input className="form-control" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+            <div className="mb-2"><input className="form-control" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
+            <div><button className="btn btn-success me-2" onClick={save}>Save</button><button className="btn btn-secondary" onClick={() => setEditing(false)}>Cancel</button></div>
           </div>
-        </div>
+        </motion.div>
       )}
 
       <section>
@@ -109,7 +102,7 @@ export default function CommunityDetail() {
         <div className="row g-3 mt-2">
           {apartments.length === 0 && <div className="text-muted">No apartments found</div>}
           {apartments.map(a => (
-            <div key={a.id} className="col-sm-6 col-md-4">
+            <motion.div key={a.id} className="col-sm-6 col-md-4" initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <div className="card h-100">
                 <div className="card-body d-flex flex-column">
                   <h6 className="card-title mb-1">{a.title || `Apartment ${a.apartmentNumber || a.id}`}</h6>
@@ -120,7 +113,7 @@ export default function CommunityDetail() {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>

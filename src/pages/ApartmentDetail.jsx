@@ -4,6 +4,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ApartmentsAPI } from '../api';
 import Alert from '../components/Alert';
 import { isAdmin } from '../api/auth';
+import { motion } from 'framer-motion';
+import useRevealOnScroll from '../hooks/useRevealOnScroll';
 
 export default function ApartmentDetail() {
   const { id } = useParams();
@@ -16,10 +18,9 @@ export default function ApartmentDetail() {
   const [error, setError] = useState(null);
 
   const admin = isAdmin();
+  useRevealOnScroll();
 
-  // guard to avoid double-fetch in React StrictMode (dev)
   const didFetch = useRef(false);
-
   useEffect(() => {
     if (didFetch.current) return;
     didFetch.current = true;
@@ -33,7 +34,6 @@ export default function ApartmentDetail() {
     try {
       const data = await ApartmentsAPI.get(id);
       setApartment(data);
-      // seed form from returned object, keeping undefined -> ''
       setForm({
         title: data.title ?? '',
         description: data.description ?? '',
@@ -46,7 +46,7 @@ export default function ApartmentDetail() {
         longitude: data.longitude ?? '',
         address: data.address ?? '',
         communityId: data.communityId ?? '',
-        communityName: data.communityName ?? '',
+        communityName: data.communityName ?? ''
       });
     } catch (e) {
       console.error(e);
@@ -61,9 +61,8 @@ export default function ApartmentDetail() {
     setLoading(true);
     setError(null);
     try {
-      // Prepare payload: cast numbers where appropriate, allow nullable values
       const payload = {
-        ...apartment, // keep any server-side fields we don't display explicitly
+        ...apartment,
         title: form.title,
         description: form.description || null,
         price: form.price === '' ? null : Number(form.price),
@@ -79,7 +78,6 @@ export default function ApartmentDetail() {
 
       const updated = await ApartmentsAPI.update(id, payload);
       setApartment(updated);
-      // refresh form values from response (server may fill computed fields)
       setForm(prev => ({ ...prev,
         title: updated.title ?? prev.title,
         description: updated.description ?? prev.description,
@@ -129,8 +127,7 @@ export default function ApartmentDetail() {
       {message && <Alert type="success">{message}</Alert>}
       {error && <Alert type="danger" onClose={() => setError(null)}>{error}</Alert>}
 
-      {/* Display card with full details */}
-      <div className="card mb-4 shadow-sm">
+      <motion.div className="card mb-4 shadow-sm reveal" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <div className="card-body d-flex justify-content-between align-items-start">
           <div>
             <h3 className="card-title">{apartment.title || `Apartment #${apartment.id}`}</h3>
@@ -156,11 +153,10 @@ export default function ApartmentDetail() {
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Edit form */}
       {editing && admin && (
-        <div className="card mb-4">
+        <motion.div className="card mb-4 reveal" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <div className="card-body">
             <h5 className="mb-3">Edit apartment</h5>
 
@@ -232,32 +228,27 @@ export default function ApartmentDetail() {
 
             <div className="mt-3">
               <button className="btn btn-success me-2" onClick={save} disabled={loading}>{loading ? 'Saving...' : 'Save'}</button>
-              <button className="btn btn-secondary" onClick={() => { setEditing(false); setForm({ // reset form to apartment values
-                title: apartment.title ?? '',
-                description: apartment.description ?? '',
-                price: apartment.price ?? '',
-                bedrooms: apartment.bedrooms ?? 0,
-                bathrooms: apartment.bathrooms ?? 0,
-                sqft: apartment.sqft ?? 0,
-                available: apartment.available ?? false,
-                latitude: apartment.latitude ?? '',
-                longitude: apartment.longitude ?? '',
-                address: apartment.address ?? '',
-                communityId: apartment.communityId ?? '',
-                communityName: apartment.communityName ?? '',
-              }); }}>Cancel</button>
+              <button className="btn btn-secondary" onClick={() => {
+                setEditing(false);
+                setForm({
+                  title: apartment.title ?? '',
+                  description: apartment.description ?? '',
+                  price: apartment.price ?? '',
+                  bedrooms: apartment.bedrooms ?? 0,
+                  bathrooms: apartment.bathrooms ?? 0,
+                  sqft: apartment.sqft ?? 0,
+                  available: apartment.available ?? false,
+                  latitude: apartment.latitude ?? '',
+                  longitude: apartment.longitude ?? '',
+                  address: apartment.address ?? '',
+                  communityId: apartment.communityId ?? '',
+                  communityName: apartment.communityName ?? '',
+                });
+              }}>Cancel</button>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
-
-      {/* Raw JSON for debugging (optional) */}
-      <div className="card mt-3">
-        <div className="card-body">
-          <h6 className="card-subtitle mb-2 text-muted">Raw JSON</h6>
-          <pre style={{ maxHeight: 240, overflow: 'auto' }}>{JSON.stringify(apartment, null, 2)}</pre>
-        </div>
-      </div>
     </div>
   );
 }

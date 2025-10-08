@@ -1,18 +1,28 @@
 // src/components/ApartmentModel.jsx
-import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
-import { Modal } from 'bootstrap';
+import React, { forwardRef, useImperativeHandle, useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ApartmentsAPI } from '../api';
 import Alert from './Alert';
 import { isAdmin } from '../api/auth';
 
 /*
-Usage: parent keeps a ref to this component and calls modalRef.current.open(apartmentId)
-It will fetch full apartment details and show the modal. onSave callback returns updated apartment.
+  Replaces Bootstrap modal with a simple accessible Framer Motion modal.
+  Parent uses a ref: modalRef.current.open(id) to show, and modalRef.current.close() to hide.
 */
 
+const backdrop = {
+  visible: { opacity: 1, transition: { duration: 0.18 } },
+  hidden: { opacity: 0, transition: { duration: 0.18 } }
+};
+
+const sheet = {
+  hidden: { y: 24, opacity: 0, scale: 0.995 },
+  visible: { y: 0, opacity: 1, scale: 1, transition: { duration: 0.26, ease: 'easeOut' } },
+  exit: { y: 12, opacity: 0, transition: { duration: 0.18 } }
+};
+
 const ApartmentModel = forwardRef(function ApartmentModel(props, ref) {
-  const modalRef = useRef(null);
-  const bsModal = useRef(null);
+  const [openId, setOpenId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [apartment, setApartment] = useState(null);
   const [form, setForm] = useState({});
@@ -22,54 +32,50 @@ const ApartmentModel = forwardRef(function ApartmentModel(props, ref) {
   const admin = isAdmin();
 
   useImperativeHandle(ref, () => ({
-    open: (id) => showForId(id),
-    close: () => hide()
-  }));
+    open: (id) => setOpenId(id),
+    close: () => setOpenId(null)
+  }), []);
 
   useEffect(() => {
-    if (!modalRef.current) return;
-    bsModal.current = new Modal(modalRef.current, { backdrop: 'static' });
-    return () => {
-      if (bsModal.current) bsModal.current.hide();
-    };
-  }, []);
-
-  async function showForId(id) {
-    setMessage(null);
-    setError(null);
-    setLoading(true);
-    try {
-      const data = await ApartmentsAPI.get(id);
-      setApartment(data);
-      setForm({
-        title: data.title ?? '',
-        description: data.description ?? '',
-        price: data.price ?? '',
-        bedrooms: data.bedrooms ?? 0,
-        bathrooms: data.bathrooms ?? 0,
-        sqft: data.sqft ?? 0,
-        available: !!data.available,
-        latitude: data.latitude ?? '',
-        longitude: data.longitude ?? '',
-        address: data.address ?? '',
-        communityId: data.communityId ?? '',
-      });
-      bsModal.current.show();
-    } catch (e) {
-      console.error(e);
-      setError(e.message || 'Failed to load apartment');
-    } finally {
-      setLoading(false);
+    if (!openId) {
+      setApartment(null);
+      setForm({});
+      setError(null);
+      setMessage(null);
+      return;
     }
-  }
 
-  function hide() {
-    if (bsModal.current) bsModal.current.hide();
-    setApartment(null);
-    setForm({});
-    setError(null);
-    setMessage(null);
-  }
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await ApartmentsAPI.get(openId);
+        if (cancelled) return;
+        setApartment(data);
+        setForm({
+          title: data.title ?? '',
+          description: data.description ?? '',
+          price: data.price ?? '',
+          bedrooms: data.bedrooms ?? 0,
+          bathrooms: data.bathrooms ?? 0,
+          sqft: data.sqft ?? 0,
+          available: !!data.available,
+          latitude: data.latitude ?? '',
+          longitude: data.longitude ?? '',
+          address: data.address ?? '',
+          communityId: data.communityId ?? ''
+        });
+      } catch (e) {
+        console.error(e);
+        setError(e?.message || 'Failed to load apartment');
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [openId]);
 
   async function save() {
     if (!admin) return setError('You do not have permission to edit this apartment');
@@ -79,7 +85,7 @@ const ApartmentModel = forwardRef(function ApartmentModel(props, ref) {
       const payload = {
         ...apartment,
         title: form.title,
-        description: form.description,
+        description: form.description || null,
         price: form.price === '' ? null : Number(form.price),
         bedrooms: Number(form.bedrooms),
         bathrooms: Number(form.bathrooms),
@@ -92,13 +98,12 @@ const ApartmentModel = forwardRef(function ApartmentModel(props, ref) {
       };
       const updated = await ApartmentsAPI.update(apartment.id, payload);
       setApartment(updated);
-      setForm(prev => ({ ...prev })); // keep UI in sync
       setMessage('Saved successfully');
-      setTimeout(() => setMessage(null), 2500);
+      setTimeout(() => setMessage(null), 2000);
       if (props.onSave) props.onSave(updated);
     } catch (e) {
       console.error(e);
-      setError(e.message || 'Save failed');
+      setError(e?.message || 'Save failed');
     } finally {
       setLoading(false);
     }
@@ -109,128 +114,134 @@ const ApartmentModel = forwardRef(function ApartmentModel(props, ref) {
     if (!confirm('Delete apartment?')) return;
     try {
       await ApartmentsAPI.remove(apartment.id);
-      hide();
+      setOpenId(null);
       if (props.onDelete) props.onDelete(apartment.id);
     } catch (e) {
       console.error(e);
-      setError(e.message || 'Delete failed');
+      setError(e?.message || 'Delete failed');
     }
   }
 
-  if (!apartment) {
-    // render modal DOM so bootstrap can attach. Body will show spinner when loading.
-    return (
-      <div className="modal fade" tabIndex="-1" ref={modalRef}>
-        <div className="modal-dialog modal-lg modal-dialog-centered">
-          <div className="modal-content">
-            <div className="modal-body">
-              {loading ? <div className="text-center py-4">Loading...</div> : <div className="text-muted py-4">No apartment selected</div>}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const inputDisabled = !admin;
-
   return (
-    <div className="modal fade" tabIndex="-1" ref={modalRef}>
-      <div className="modal-dialog modal-lg modal-dialog-scrollable">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">Apartment — {apartment.title || `#${apartment.id}`}</h5>
-            <button type="button" className="btn-close" onClick={hide}></button>
-          </div>
-
-          <div className="modal-body">
-            {message && <Alert type="success">{message}</Alert>}
-            {error && <Alert type="danger" onClose={() => setError(null)}>{error}</Alert>}
-
-            <div className="mb-3">
-              <label className="form-label">Title</label>
-              <input className="form-control" disabled={inputDisabled} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+    <AnimatePresence>
+      {openId != null && (
+        <motion.div className="fr-modal-root" initial="hidden" animate="visible" exit="hidden">
+          <motion.div
+            className="fr-modal-backdrop"
+            variants={backdrop}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            onClick={() => setOpenId(null)}
+            aria-hidden="true"
+          />
+          <motion.div
+            className="fr-modal-sheet"
+            role="dialog"
+            aria-modal="true"
+            variants={sheet}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            <div className="fr-modal-header">
+              <h5 className="fr-modal-title">Apartment — {apartment ? (apartment.title || `#${apartment.id}`) : 'Loading...'}</h5>
+              <button className="btn-close" onClick={() => setOpenId(null)} aria-label="Close"></button>
             </div>
 
-            <div className="mb-3">
-              <label className="form-label">Description</label>
-              <textarea className="form-control" disabled={inputDisabled} rows="3" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}></textarea>
+            <div className="fr-modal-body">
+              {loading && !apartment && <div className="text-center py-4">Loading...</div>}
+
+              {message && <Alert type="success">{message}</Alert>}
+              {error && <Alert type="danger" onClose={() => setError(null)}>{error}</Alert>}
+
+              {apartment && (
+                <>
+                  <div className="mb-3">
+                    <label className="form-label">Title</label>
+                    <input className="form-control" disabled={!admin} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Description</label>
+                    <textarea className="form-control" disabled={!admin} rows="3" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}></textarea>
+                  </div>
+
+                  <div className="row g-2 mb-3">
+                    <div className="col-md-3">
+                      <label className="form-label">Price</label>
+                      <input type="number" className="form-control" disabled={!admin} value={form.price ?? ''} onChange={e => setForm({ ...form, price: e.target.value })} />
+                    </div>
+                    <div className="col-md-2">
+                      <label className="form-label">Bedrooms</label>
+                      <input type="number" className="form-control" disabled={!admin} value={form.bedrooms} onChange={e => setForm({ ...form, bedrooms: e.target.value })} />
+                    </div>
+                    <div className="col-md-2">
+                      <label className="form-label">Bathrooms</label>
+                      <input type="number" className="form-control" disabled={!admin} value={form.bathrooms} onChange={e => setForm({ ...form, bathrooms: e.target.value })} />
+                    </div>
+                    <div className="col-md-2">
+                      <label className="form-label">Sqft</label>
+                      <input type="number" className="form-control" disabled={!admin} value={form.sqft} onChange={e => setForm({ ...form, sqft: e.target.value })} />
+                    </div>
+                    <div className="col-md-3">
+                      <label className="form-label">Available</label>
+                      <select className="form-select" disabled={!admin} value={form.available ? 'true' : 'false'} onChange={e => setForm({ ...form, available: e.target.value === 'true' })}>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="row g-2 mb-3">
+                    <div className="col-md-6">
+                      <label className="form-label">Address</label>
+                      <input className="form-control" disabled={!admin} value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
+                    </div>
+                    <div className="col-md-3">
+                      <label className="form-label">Latitude</label>
+                      <input className="form-control" disabled={!admin} value={form.latitude ?? ''} onChange={e => setForm({ ...form, latitude: e.target.value })} />
+                    </div>
+                    <div className="col-md-3">
+                      <label className="form-label">Longitude</label>
+                      <input className="form-control" disabled={!admin} value={form.longitude ?? ''} onChange={e => setForm({ ...form, longitude: e.target.value })} />
+                    </div>
+                  </div>
+
+                  <div className="row g-2">
+                    <div className="col-md-6">
+                      <label className="form-label">Community</label>
+                      <input className="form-control" disabled={!admin} value={form.communityId} onChange={e => setForm({ ...form, communityId: e.target.value })} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Community Name</label>
+                      <input className="form-control" value={apartment.communityName || ''} readOnly />
+                    </div>
+                  </div>
+
+                  <div className="mt-3 text-muted small">ID: {apartment.id}</div>
+                </>
+              )}
             </div>
 
-            <div className="row g-2 mb-3">
-              <div className="col-md-3">
-                <label className="form-label">Price</label>
-                <input type="number" className="form-control" disabled={inputDisabled} value={form.price ?? ''} onChange={e => setForm({ ...form, price: e.target.value })} />
-              </div>
-              <div className="col-md-2">
-                <label className="form-label">Bedrooms</label>
-                <input type="number" className="form-control" disabled={inputDisabled} value={form.bedrooms} onChange={e => setForm({ ...form, bedrooms: e.target.value })} />
-              </div>
-              <div className="col-md-2">
-                <label className="form-label">Bathrooms</label>
-                <input type="number" className="form-control" disabled={inputDisabled} value={form.bathrooms} onChange={e => setForm({ ...form, bathrooms: e.target.value })} />
-              </div>
-              <div className="col-md-2">
-                <label className="form-label">Sqft</label>
-                <input type="number" className="form-control" disabled={inputDisabled} value={form.sqft} onChange={e => setForm({ ...form, sqft: e.target.value })} />
-              </div>
-              <div className="col-md-3">
-                <label className="form-label">Available</label>
-                <select className="form-select" disabled={inputDisabled} value={form.available ? 'true' : 'false'} onChange={e => setForm({ ...form, available: e.target.value === 'true' })}>
-                  <option value="true">Yes</option>
-                  <option value="false">No</option>
-                </select>
-              </div>
+            <div className="fr-modal-footer">
+              {admin ? (
+                <>
+                  <button className="btn btn-danger me-auto" onClick={del}>Delete</button>
+                  <button className="btn btn-secondary" onClick={() => setOpenId(null)}>Close</button>
+                  <button className="btn btn-primary" onClick={save} disabled={loading}>{loading ? 'Saving...' : 'Save changes'}</button>
+                </>
+              ) : (
+                <>
+                  <div className="me-auto text-muted small">Read-only</div>
+                  <button className="btn btn-secondary" onClick={() => setOpenId(null)}>Close</button>
+                </>
+              )}
             </div>
-
-            <div className="row g-2 mb-3">
-              <div className="col-md-6">
-                <label className="form-label">Address</label>
-                <input className="form-control" disabled={inputDisabled} value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
-              </div>
-              <div className="col-md-3">
-                <label className="form-label">Latitude</label>
-                <input className="form-control" disabled={inputDisabled} value={form.latitude ?? ''} onChange={e => setForm({ ...form, latitude: e.target.value })} />
-              </div>
-              <div className="col-md-3">
-                <label className="form-label">Longitude</label>
-                <input className="form-control" disabled={inputDisabled} value={form.longitude ?? ''} onChange={e => setForm({ ...form, longitude: e.target.value })} />
-              </div>
-            </div>
-
-            <div className="row g-2">
-              <div className="col-md-6">
-                <label className="form-label">Community</label>
-                <input className="form-control" disabled={inputDisabled} value={form.communityId} onChange={e => setForm({ ...form, communityId: e.target.value })} />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Community Name</label>
-                <input className="form-control" value={apartment.communityName || ''} readOnly />
-              </div>
-            </div>
-
-            <div className="mt-3 text-muted small">
-              <div>ID: {apartment.id}</div>
-            </div>
-          </div>
-
-          <div className="modal-footer">
-            {admin ? (
-              <>
-                <button className="btn btn-danger me-auto" onClick={del}>Delete</button>
-                <button className="btn btn-secondary" onClick={hide}>Close</button>
-                <button className="btn btn-primary" onClick={save} disabled={loading}>{loading ? 'Saving...' : 'Save changes'}</button>
-              </>
-            ) : (
-              <>
-                <div className="me-auto text-muted small">Read-only</div>
-                <button className="btn btn-secondary" onClick={hide}>Close</button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 });
 

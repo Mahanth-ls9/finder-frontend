@@ -1,87 +1,27 @@
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Nav from './components/Nav';
-import Home from './pages/Home';
-import CommunitiesList from './pages/CommunitiesList';
-import CommunityDetail from './pages/CommunityDetail';
-import ApartmentsList from './pages/ApartmentsList';
-import ApartmentDetail from './pages/ApartmentDetail';
-import UsersList from './pages/UsersList';
-import Login from './pages/Login';
-import PrivateRoute from './components/PrivateRoute';
-import Register from './pages/Register';  // ✅ new
-import AdminDashboard from './pages/AdminDashboard';
-
-
-
+// src/App.jsx
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Home from "./pages/Home.jsx";
+import UsersList from "./pages/UsersList.jsx";
+import ApartmentsList from "./pages/ApartmentsList.jsx";
+import AdminDashboard from "./pages/AdminDashboard.jsx";
+import Login from "./pages/Login.jsx";
+import Register from "./pages/Register.jsx";
+import "./styles.css";
 
 export default function App() {
   return (
-    <>
-      <Nav />
-      <main className="container container-max py-4">
+    <Router>
+      <div className="container">
         <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/users" element={<UsersList />} />
+          <Route path="/apartments" element={<ApartmentsList />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <Home />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/communities"
-            element={
-              <PrivateRoute>
-                <CommunitiesList />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/communities/:id"
-            element={
-              <PrivateRoute>
-                <CommunityDetail />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/apartments"
-            element={
-              <PrivateRoute>
-                <ApartmentsList />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <PrivateRoute>
-                <AdminDashboard />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/apartments/:id"
-            element={
-              <PrivateRoute>
-                <ApartmentDetail />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/users"
-            element={
-              <PrivateRoute>
-                <UsersList />
-              </PrivateRoute>
-            }
-          />
         </Routes>
-      </main>
-    </>
+      </div>
+    </Router>
   );
 }

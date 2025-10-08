@@ -1,83 +1,56 @@
-// src/pages/Login.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { login as loginApi, saveToken, getToken } from '../api/auth';
-import Alert from '../components/Alert';
-import { Link } from 'react-router-dom';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { fadeUp } from "../motionvariants";
+import { AuthAPI } from "../api";
+import blogBlob from "../assets/blog.svg";
 
 export default function Login() {
-  const [form, setForm] = useState({ username: '', password: '' });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const navigate = useNavigate();
+  const [form, setForm] = useState({ email: "", password: "" });
 
-  async function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-
     try {
-      // call login API (assume it returns response data OR performs internal save)
-      const res = await loginApi(form.username, form.password);
-
-      // if API returned token in response, save it
-      if (res && (res.jwt || res.token)) {
-        const token = res.jwt ?? res.token;
-        saveToken(token);
-      }
-
-      // otherwise if loginApi already saved token (side-effect), ensure header is present
-      const existing = getToken();
-      if (!existing) {
-        // if no token found, treat as failure
-        throw new Error('Login did not return a token');
-      }
-
-      navigate('/'); // go to home
-    } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.message || err.message || 'Invalid username or password');
-    } finally {
-      setLoading(false);
+      await AuthAPI.login(form);
+      window.location.href = "/";
+    } catch {
+      alert("Login failed");
     }
-  }
+  };
 
   return (
-    <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '70vh' }}>
-      <div className="card shadow-sm p-4" style={{ width: '360px' }}>
-        <h4 className="text-center mb-3">Login</h4>
-        {error && <Alert type="danger">{error}</Alert>}
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label className="form-label">Username</label>
+    <main className="hero text-center">
+      <div className="hero-blobs">
+        <img src={blogBlob} alt="" className="blob-left floaty" />
+        <img src={blogBlob} alt="" className="blob-right floaty" />
+      </div>
+
+      <motion.div className="container" variants={fadeUp} initial="hidden" animate="visible">
+        <div className="card" style={{ maxWidth: "420px", margin: "0 auto" }}>
+          <h2>Login</h2>
+          <form onSubmit={handleSubmit} style={{ marginTop: "1rem" }}>
             <input
-              type="text"
+              type="email"
+              placeholder="Email"
               className="form-control"
-              value={form.username}
-              onChange={e => setForm({ ...form, username: e.target.value })}
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
               required
             />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Password</label>
             <input
               type="password"
+              placeholder="Password"
               className="form-control"
               value={form.password}
-              onChange={e => setForm({ ...form, password: e.target.value })}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
               required
+              style={{ marginTop: "1rem" }}
             />
-          </div>
-          <button type="submit" className="btn btn-primary w-100" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-        <div className="text-center mt-3">
-          <small>
-            Don’t have an account? <Link to="/register">Register</Link>
-          </small>
+            <button type="submit" className="btn btn-primary" style={{ marginTop: "1.5rem", width: "100%" }}>
+              Sign In
+            </button>
+          </form>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </main>
   );
 }

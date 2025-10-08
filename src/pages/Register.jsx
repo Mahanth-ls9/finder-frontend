@@ -1,91 +1,65 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
-import Alert from "../components/Alert";
+import { motion } from "framer-motion";
+import { fadeUp } from "../motionvariants";
+import { UsersAPI } from "../api";
+import blogBlob from "../assets/blog.svg";
 
 export default function Register() {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  const navigate = useNavigate();
 
-  async function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-
     try {
-      await axios.post("/api/users/register", form);
-      setSuccess("Registration successful! You can now log in.");
-      setTimeout(() => navigate("/login"), 1500);
-    } catch (err) {
-      console.error(err);
-      setError(
-        err.response?.data?.message || "Registration failed. Try again later."
-      );
-    } finally {
-      setLoading(false);
+      await UsersAPI.register(form);
+      window.location.href = "/login";
+    } catch {
+      alert("Registration failed");
     }
-  }
+  };
 
   return (
-    <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "70vh" }}>
-      <div className="card shadow-sm p-4" style={{ width: "400px" }}>
-        <h4 className="text-center mb-3">Create an Account</h4>
+    <main className="hero text-center">
+      <div className="hero-blobs">
+        <img src={blogBlob} alt="" className="blob-left floaty" />
+        <img src={blogBlob} alt="" className="blob-right floaty" />
+      </div>
 
-        {error && <Alert type="danger">{error}</Alert>}
-        {success && <Alert type="success">{success}</Alert>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label className="form-label">Username</label>
+      <motion.div className="container" variants={fadeUp} initial="hidden" animate="visible">
+        <div className="card" style={{ maxWidth: "420px", margin: "0 auto" }}>
+          <h2>Create Account</h2>
+          <form onSubmit={handleSubmit} style={{ marginTop: "1rem" }}>
             <input
+              type="text"
+              placeholder="Username"
               className="form-control"
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
               required
             />
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label">Email</label>
             <input
               type="email"
+              placeholder="Email"
               className="form-control"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               required
+              style={{ marginTop: "1rem" }}
             />
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label">Password</label>
             <input
               type="password"
+              placeholder="Password"
               className="form-control"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               required
+              style={{ marginTop: "1rem" }}
             />
-          </div>
-
-          <button
-            type="submit"
-            className="btn btn-primary w-100"
-            disabled={loading}
-          >
-            {loading ? "Registering..." : "Register"}
-          </button>
-        </form>
-
-        <div className="text-center mt-3">
-          <small>
-            Already have an account? <Link to="/login">Login</Link>
-          </small>
+            <button type="submit" className="btn btn-primary" style={{ marginTop: "1.5rem", width: "100%" }}>
+              Register
+            </button>
+          </form>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </main>
   );
 }
